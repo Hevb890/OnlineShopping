@@ -1,0 +1,66 @@
+# docker-compose.yml
+version: '3.8' # Docker Compose file format version
+
+services:
+  # Product Management Service
+  product-management:
+    build:
+      context: ./product_management # Path to your product_management service's directory
+      dockerfile: Dockerfile      # Assuming the Dockerfile is directly in that directory
+    ports:
+      - "8082:8082" # Maps host port 8082 to container port 8082
+    environment:
+      # These variables configure where images are saved *inside* the container
+      # and the base URL from which they are accessed.
+      APP_IMAGE_UPLOAD_DIR: /tmp/uploads/images/ # Path inside the container for image storage
+      APP_IMAGE_BASE_URL: http://localhost:8082/images/ # Base URL to access images from this service
+    networks:
+      - hotel-network # Connects to the custom network for inter-service communication
+
+  # Cart Management Service
+  cart-management:
+    build:
+      context: ./cart_management # Path to your cart_management service's directory
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081" # Maps host port 8081 to container port 8081
+    networks:
+      - hotel-network
+
+  # Order Management Service
+  order-management:
+    build:
+      context: ./order_management # Path to your order_management service's directory
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083" # Maps host port 8083 to container port 8083
+    networks:
+      - hotel-network
+  
+  email-management:
+    build:
+      context: ./email_management
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084" # Maps host port 8084 to container port 8084
+    networks:
+      - hotel-network
+
+  # API Gateway Service
+  api-gateway:
+    build:
+      context: ./api_gateway # Path to your api_gateway service's directory
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080" # Maps host port 8080 to container port 8080
+    depends_on: # Ensures these services start before the API Gateway
+      - product-management
+      - cart-management
+      - order-management
+    networks:
+      - hotel-network # Connects to the custom network
+
+# Custom network for all services to communicate
+networks:
+  hotel-network:
+    driver: bridge # Default bridge driver is suitable for most cases
